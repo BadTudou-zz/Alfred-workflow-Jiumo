@@ -7,7 +7,7 @@
 
 ## 安装
 
-下载、安装 [Jiumo search.alfredworkflow](./Jiumo search.alfredworkflow)
+下载、安装 [Jiumo search.alfredworkflow](./Jiumo-search.alfredworkflow)
 
 ## 使用
 
