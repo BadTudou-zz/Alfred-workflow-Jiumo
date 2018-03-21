@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.badtudou.jiumo-search</string>
+	<key>category</key>
+	<string>Internet</string>
+	<key>connections</key>
+	<dict>
+		<key>1AEE333F-4073-4E76-A286-91F869C65BE1</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>36FB4E06-9893-4547-B57E-7294DC6FA908</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>63F60794-BB56-4415-9372-BAF974C3A7E1</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>1AEE333F-4073-4E76-A286-91F869C65BE1</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>BadTudou</string>
+	<key>description</key>
+	<string>Search for books through the website: www.jiumodiary.com</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>Jiumo search</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>{query}</string>
+				<key>utf8</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>36FB4E06-9893-4547-B57E-7294DC6FA908</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>jiumo</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>正在搜索... ...</string>
+				<key>script</key>
+				<string>require 'net/http'
+require 'uri'
+require 'json'
+require 'rexml/document'
+
+HOST_FREEGEOIP = 'https://freegeoip.net'
+
+HOST_JIUMO = 'https://www.jiumodiary.com'
+
+HEADERS = {
+	'Content-Type' =&gt;'application/x-www-form-urlencoded',
+	'X-Requested-With' =&gt; 'XMLHttpRequest'
+}
+
+ICONS = {
+	'vdisk.weibo.com' =&gt; 'weipan.icns',
+	'ishare.iask.com' =&gt; 'aiwen.icns',
+	'local'			  =&gt; 'icon.png',
+	'yun.baidu.com'	  =&gt; 'baiduwangpan.icns',
+	'pan.baidu.com'   =&gt; 'baiduwangpan.icns',
+	'喜马拉雅 (ximalaya.com)'	  =&gt; 'ximalaya.icns',
+	'gitbook.com' =&gt; 'gitbook.icns'
+}
+
+keywords = ARGV[0]
+
+def get_remote_ip
+	uri = URI("#{HOST_FREEGEOIP}/json/")
+	res = JSON.parse(Net::HTTP.get(uri))
+	res['ip']
+end
+
+
+def serch_books(keywords)
+	remote_ip = get_remote_ip()
+	url_str = 	&lt;&lt;EOF
+#{HOST_JIUMO}/init_hubs.php?
+q=#{URI::encode(keywords)}
+&amp;remote_ip=#{remote_ip}
+&amp;time_int=#{Time.now.to_i}
+EOF
+	uri = URI(url_str)
+	res = Net::HTTP.post_form(uri, HEADERS)
+	res = JSON.parse(res.body)
+	res['id']
+end
+
+def fetch_result(id, set=0)
+	url_str = &lt;&lt;EOF
+#{HOST_JIUMO}/ajax_fetch_hubs.php?
+id=#{id}
+&amp;set=#{set}
+EOF
+	uri = URI(url_str)
+	res = Net::HTTP.post_form(uri, HEADERS)
+	res = JSON.parse(res.body)
+end
+
+def parse_result(result)
+	xml = REXML::Document.new
+	book_index = 0
+	element = xml.add_element ('items')
+	result['sources'].each do |item|
+		item['details']['data'].each  do |book|
+			book_index += 1
+			item_xml = element.add_element('item')
+			item_xml.add_element('title').add_text("#{book_index} . #{book['title']}")
+			item_xml.add_element('subtitle').add_text("#{book['host']} - #{book['des']}")
+			item_xml.add_element('arg').add_text(book['link'])
+			item_xml.add_element('autocomplete').add_text(book['title'])
+			item_xml.add_element('match').add_text(book['title'])
+			item_xml.add_element('icon').add_text("#{Dir.pwd}/#{ICONS[book['host']]}")
+		end
+	end
+	xml.write
+end
+
+result =  fetch_result( serch_books(keywords))
+parse_result(result)
+
+</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>Jiumo E-Book Search(鸠摩电子书搜索)</string>
+				<key>title</key>
+				<string>Jiumo E-Book Search(鸠摩电子书搜索)</string>
+				<key>type</key>
+				<integer>2</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>63F60794-BB56-4415-9372-BAF974C3A7E1</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key>
+				<false/>
+				<key>clipboardtext</key>
+				<string>{query}</string>
+				<key>transient</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>1AEE333F-4073-4E76-A286-91F869C65BE1</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string>This workflow gives you in-line results for Google, helping you find what you want even quicker!</string>
+	<key>uidata</key>
+	<dict>
+		<key>1AEE333F-4073-4E76-A286-91F869C65BE1</key>
+		<dict>
+			<key>xpos</key>
+			<integer>290</integer>
+			<key>ypos</key>
+			<integer>140</integer>
+		</dict>
+		<key>36FB4E06-9893-4547-B57E-7294DC6FA908</key>
+		<dict>
+			<key>xpos</key>
+			<integer>530</integer>
+			<key>ypos</key>
+			<integer>90</integer>
+		</dict>
+		<key>63F60794-BB56-4415-9372-BAF974C3A7E1</key>
+		<dict>
+			<key>xpos</key>
+			<integer>30</integer>
+			<key>ypos</key>
+			<integer>140</integer>
+		</dict>
+	</dict>
+	<key>version</key>
+	<string>1.0</string>
+	<key>webaddress</key>
+	<string>https://github.com/BadTudou/alfred-workflow-jiumo</string>
+</dict>
+</plist>
