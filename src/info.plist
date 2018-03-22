@@ -111,8 +111,21 @@ ICONS = {
 	'yun.baidu.com'	  =&gt; 'baiduwangpan.icns',
 	'pan.baidu.com'   =&gt; 'baiduwangpan.icns',
 	'喜马拉雅 (ximalaya.com)'	  =&gt; 'ximalaya.icns',
-	'gitbook.com' =&gt; 'gitbook.icns'
+	'gitbook.com' 	  =&gt; 'gitbook.icns',
+	'error'			  =&gt; 'error.icns'
 }
+
+ERRORS = {
+	'tooshort' =&gt; '您查询的图书标题长度过短, 请重试',
+	'exceed'   =&gt; '您的查询已达到今日的最高次数',
+	'none'     =&gt; '没有找到相关的文档',
+	'network'  =&gt; '网络错误，请保持网络畅通',
+	'default'  =&gt; '未知错误'
+}
+
+RESPONSE_SUCCEED = 'succeed'
+RESULT_NONE = 'none'
+NETWORK_ERROR = 'network'
 
 keywords = ARGV[0]
 
@@ -130,8 +143,11 @@ def serch_books(keywords)
 EOF
 	uri = URI(url_str)
 	res = Net::HTTP.post_form(uri, HEADERS)
-	res = JSON.parse(res.body)
-	res['id']
+	if res.is_a?(Net::HTTPSuccess)
+		res = JSON.parse(res.body)
+		raise res['status'] if res['status'] != RESPONSE_SUCCEED
+		res['id']
+	end
 end
 
 def fetch_result(id, set=0)
@@ -140,10 +156,13 @@ def fetch_result(id, set=0)
 EOF
 	uri = URI(url_str)
 	res = Net::HTTP.post_form(uri, HEADERS)
-	res = JSON.parse(res.body)
+	if res.is_a?(Net::HTTPSuccess)
+		res = JSON.parse(res.body)
+	end
 end
 
 def parse_result(result)
+	raise RESULT_NONE if  result['sources'].empty?
 	xml = REXML::Document.new
 	book_index = 0
 	element = xml.add_element ('items')
@@ -162,8 +181,19 @@ def parse_result(result)
 	xml.write
 end
 
-result =  fetch_result( serch_books(keywords))
-parse_result(result)
+begin
+	result =  fetch_result( serch_books(keywords))
+	parse_result(result)
+rescue =&gt; exception
+	message = exception.message
+	message = NETWORK_ERROR if exception.instance_of? SocketError
+	xml = REXML::Document.new
+	element = xml.add_element ('items')
+	item_xml = element.add_element('item')
+	item_xml.add_element('title').add_text("错误： #{!ERRORS[message].nil? ? ERRORS[message]:ERRORS['default']}")
+	item_xml.add_element('icon').add_text("#{Dir.pwd}/#{ICONS['error']}")
+	xml.write
+end
 
 </string>
 				<key>scriptargtype</key>
