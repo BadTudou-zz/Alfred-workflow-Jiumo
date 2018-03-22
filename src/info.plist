@@ -126,10 +126,7 @@ end
 def serch_books(keywords)
 	remote_ip = get_remote_ip()
 	url_str = 	&lt;&lt;EOF
-#{HOST_JIUMO}/init_hubs.php?
-q=#{URI::encode(keywords)}
-&amp;remote_ip=#{remote_ip}
-&amp;time_int=#{Time.now.to_i}
+#{HOST_JIUMO}/init_hubs.php?q=#{URI::encode(keywords)}&amp;remote_ip=#{remote_ip}&amp;time_int=#{Time.now.to_i}
 EOF
 	uri = URI(url_str)
 	res = Net::HTTP.post_form(uri, HEADERS)
@@ -139,9 +136,7 @@ end
 
 def fetch_result(id, set=0)
 	url_str = &lt;&lt;EOF
-#{HOST_JIUMO}/ajax_fetch_hubs.php?
-id=#{id}
-&amp;set=#{set}
+#{HOST_JIUMO}/ajax_fetch_hubs.php?id=#{id}&amp;set=#{set}
 EOF
 	uri = URI(url_str)
 	res = Net::HTTP.post_form(uri, HEADERS)
@@ -210,7 +205,7 @@ parse_result(result)
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>This workflow gives you in-line results for Google, helping you find what you want even quicker!</string>
+	<string>Alfred workflow for Jiumo E-Book Search(鸠摩电子书搜索)</string>
 	<key>uidata</key>
 	<dict>
 		<key>1AEE333F-4073-4E76-A286-91F869C65BE1</key>
