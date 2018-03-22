@@ -19,9 +19,10 @@ jiumo 关键字
 
 ![Jiumo-search][workflow]
 
-
-
 ![Jiumo-search][workflow-result]
+
+![Jiumo-error][workflow-error]
+
 
 ## 版权
 
@@ -31,3 +32,4 @@ jiumo 关键字
 [MIT]: ./LICENSE.txt "MIT LICENSE"
 [workflow]: ./screenshots/workflow.png "Jiumo-search"
 [workflow-result]: ./screenshots/workflow-result.png "Jiumo-search"
+[workflow-error]: ./screenshots/workflow-error.png "Jiumo-search"
